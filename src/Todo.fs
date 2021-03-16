@@ -166,6 +166,11 @@ let private inputField state dispatch =
                                                                                                  state.NewTodo
                                                                                              prop.onChange (
                                                                                                  SetNewTodo >> dispatch
+                                                                                             )
+                                                                                             prop.onKeyDown (
+                                                                                                 key.enter,
+                                                                                                 (fun _ ->
+                                                                                                     dispatch AddNewTodo)
                                                                                              ) ] ] ]
                                       Bulma.control.div [ prop.children [ Bulma.button.button [ color.isPrimary
                                                                                                 ++ button.isMedium
@@ -173,8 +178,8 @@ let private inputField state dispatch =
                                                                                                     (fun _ ->
                                                                                                         dispatch
                                                                                                             AddNewTodo)
-                                                                                                prop.children [ Html.i [ prop.classes [ FA.fas
-                                                                                                                                        FA.fa_plus ] ] ] ] ] ] ] ]
+                                                                                                prop.children [ Html.i [ prop.classes [ FA.Fas
+                                                                                                                                        FA.FaPlus ] ] ] ] ] ] ] ]
 
 let private renderEditForm uneditedTodoDescription (todoBeingEdited: TodoBeingEdited) (dispatch: Msg -> unit) =
     Bulma.box [ Bulma.field.div [ field.isGrouped
@@ -201,8 +206,8 @@ let private renderEditForm uneditedTodoDescription (todoBeingEdited: TodoBeingEd
                                                                                                         ApplyEdit
                                                                                                             todoBeingEdited.Id
                                                                                                     ))
-                                                                                        prop.children [ Html.i [ prop.classes [ FA.fas
-                                                                                                                                FA.fa_save ] ] ] ]
+                                                                                        prop.children [ Html.i [ prop.classes [ FA.Fas
+                                                                                                                                FA.FaSave ] ] ] ]
                                                                   Bulma.button.button [ color.isWarning
                                                                                         prop.onClick
                                                                                             (fun _ ->
@@ -210,8 +215,8 @@ let private renderEditForm uneditedTodoDescription (todoBeingEdited: TodoBeingEd
                                                                                                     CancelEdit
                                                                                                         todoBeingEdited.Id
                                                                                                 ))
-                                                                                        prop.children [ Html.i [ prop.classes [ FA.fas
-                                                                                                                                FA.fa_arrow_right ] ] ] ] ] ]
+                                                                                        prop.children [ Html.i [ prop.classes [ FA.Fas
+                                                                                                                                FA.FaArrowRight ] ] ] ] ] ]
 
                                    ]
 
@@ -221,7 +226,7 @@ let private renderTodo todo dispatch =
     Bulma.box [ Bulma.columns [ columns.isMobile ++ columns.isVCentered
                                 prop.children [ Bulma.column [ Bulma.text.p [ if todo.CompletedOn.IsSome then
                                                                                   color.hasTextGreyLight
-                                                                              prop.className "subtitle"
+                                                                              prop.className Bulma.Subtitle
                                                                               prop.text todo.Description ] ]
                                                 Bulma.column [ column.isNarrow
                                                                prop.children [ Bulma.buttons [ Bulma.button.button [ if todo.CompletedOn.IsSome then
@@ -232,8 +237,8 @@ let private renderTodo todo dispatch =
                                                                                                                                  ToggleCompleted
                                                                                                                                      todo.Id
                                                                                                                              ))
-                                                                                                                     prop.children [ Html.i [ prop.classes [ FA.fas
-                                                                                                                                                             FA.fa_check ] ] ] ]
+                                                                                                                     prop.children [ Html.i [ prop.classes [ FA.Fas
+                                                                                                                                                             FA.FaCheck ] ] ] ]
                                                                                                Bulma.button.button [ color.isPrimary
                                                                                                                      if todo.CompletedOn.IsSome then
                                                                                                                          prop.disabled
@@ -245,8 +250,8 @@ let private renderTodo todo dispatch =
                                                                                                                                      StartEditingTodo
                                                                                                                                          todo.Id
                                                                                                                                  ))
-                                                                                                                     prop.children [ Html.i [ prop.classes [ FA.fas
-                                                                                                                                                             FA.fa_edit ] ] ] ]
+                                                                                                                     prop.children [ Html.i [ prop.classes [ FA.Fas
+                                                                                                                                                             FA.FaEdit ] ] ] ]
                                                                                                Bulma.button.button [ color.isDanger
                                                                                                                      prop.onClick
                                                                                                                          (fun _ ->
@@ -254,8 +259,8 @@ let private renderTodo todo dispatch =
                                                                                                                                  DeleteTodo
                                                                                                                                      todo.Id
                                                                                                                              ))
-                                                                                                                     prop.children [ Html.i [ prop.classes [ FA.fas
-                                                                                                                                                             FA.fa_trash ] ] ] ] ] ] ] ] ] ]
+                                                                                                                     prop.children [ Html.i [ prop.classes [ FA.Fas
+                                                                                                                                                             FA.FaTrash ] ] ] ] ] ] ] ] ] ]
 
 let private todoList state dispatch =
     let sortedTodoList =

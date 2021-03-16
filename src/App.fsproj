@@ -3,7 +3,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FontAwesome.fs" />
+    <Compile Include="ApplicationStyles.fs" />
     <Compile Include="Todo.fs" />
     <None Include="index.html" />
     <Compile Include="Extensions.fs" />
