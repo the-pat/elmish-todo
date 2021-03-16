@@ -188,7 +188,15 @@ let private update msg state =
         newState, Cmd.none
 
 let private appTitle =
-    Bulma.title [ prop.innerHtml "Elmish To-Do List" ]
+    Bulma.navbar [ prop.className Bulma.IsSpaced
+                   prop.children [ Bulma.container [ Bulma.navbarBrand.div [ Bulma.navbarItem.a [ Bulma.title.h1
+                                                                                                      "Elmish To-Do List" ] ]
+                                                     Bulma.navbarEnd.div [ Bulma.navbarItem.a [ prop.href
+                                                                                                    "https://github.com/the-pat/elmish-todo"
+                                                                                                prop.target "_blank"
+                                                                                                prop.children [ Html.i [ prop.classes [ Bulma.IsSize2
+                                                                                                                                        FA.Fab
+                                                                                                                                        FA.FaGithub ] ] ] ] ] ] ] ]
 
 let private inputField state dispatch =
     Bulma.field.div [ field.hasAddons
@@ -329,8 +337,7 @@ let private renderFilterTabs state dispatch =
 let App () =
     let state, dispatch = React.useElmish (init, update, [||])
 
-    Html.div [ prop.style [ style.padding 20 ]
-               prop.children [ appTitle
-                               inputField state dispatch
-                               renderFilterTabs state dispatch
-                               todoList state dispatch ] ]
+    Html.div [ appTitle
+               Bulma.section [ Bulma.container [ inputField state dispatch
+                                                 renderFilterTabs state dispatch
+                                                 todoList state dispatch ] ] ]
