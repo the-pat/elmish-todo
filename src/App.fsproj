@@ -3,6 +3,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Persistance.fs" />
     <Compile Include="ApplicationStyles.fs" />
     <Compile Include="Todo.fs" />
     <None Include="index.html" />
@@ -10,6 +11,7 @@
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Fable.SimpleJson" Version="3.18.1" />
     <PackageReference Include="Feliz" Version="1.37.0" />
     <PackageReference Include="Feliz.Bulma" Version="2.11.0" />
     <PackageReference Include="Feliz.Router" Version="3.7.0" />

@@ -1,5 +1,6 @@
 module Todo
 
+open Browser.WebStorage
 open Elmish
 open Feliz
 open Feliz.Bulma
@@ -7,7 +8,7 @@ open Feliz.Bulma.Operators
 open Feliz.UseElmish
 open System
 
-open FontAwesome
+open ApplicationStyles
 
 type private Filter =
     | All
@@ -40,20 +41,30 @@ type private Msg =
     | SetFilter of Filter
 
 let private init () =
-    { TodoList =
-          [ { Id = Guid.NewGuid()
-              Description = "Learn F#"
-              CompletedOn = Some(DateTime.UtcNow.AddDays(-1.))
-              CreatedOn = DateTime.UtcNow.AddMonths(-1)
-              TodoBeingEdited = None }
-            { Id = Guid.NewGuid()
-              Description = "Learn Elmish"
-              CompletedOn = None
-              CreatedOn = DateTime.UtcNow.AddHours(-3.)
-              TodoBeingEdited = None } ]
-      NewTodo = ""
-      Filter = NotCompleted },
-    Cmd.none
+    let storedState = Persistance.get<State> "state"
+
+    match storedState with
+    | Ok state ->
+        { state with
+              TodoList =
+                  state.TodoList
+                  |> List.map (fun todo -> { todo with TodoBeingEdited = None }) },
+        Cmd.none
+    | Error _ ->
+        { TodoList =
+              [ { Id = Guid.NewGuid()
+                  Description = "Learn F#"
+                  CompletedOn = Some(DateTime.UtcNow.AddDays(-1.))
+                  CreatedOn = DateTime.UtcNow.AddMonths(-1)
+                  TodoBeingEdited = None }
+                { Id = Guid.NewGuid()
+                  Description = "Learn Elmish"
+                  CompletedOn = None
+                  CreatedOn = DateTime.UtcNow.AddHours(-3.)
+                  TodoBeingEdited = None } ]
+          NewTodo = ""
+          Filter = NotCompleted },
+        Cmd.none
 
 let private update msg state =
     match msg with
@@ -63,7 +74,11 @@ let private update msg state =
             state.TodoList
             |> List.filter (fun todo -> todo.Id <> todoId)
 
-        { state with TodoList = nextTodoList }, Cmd.none
+        let newState = { state with TodoList = nextTodoList }
+
+        Persistance.set "state" newState
+
+        newState, Cmd.none
     | ToggleCompleted todoId ->
         let nextTodoList =
             state.TodoList
@@ -79,7 +94,11 @@ let private update msg state =
                     else
                         todo)
 
-        { state with TodoList = nextTodoList }, Cmd.none
+        let newState = { state with TodoList = nextTodoList }
+
+        Persistance.set "state" newState
+
+        newState, Cmd.none
     | AddNewTodo when state.NewTodo = "" -> state, Cmd.none
     | AddNewTodo ->
         let nextTodo =
@@ -89,10 +108,14 @@ let private update msg state =
               CreatedOn = DateTime.UtcNow
               TodoBeingEdited = None }
 
-        { state with
-              TodoList = List.append state.TodoList [ nextTodo ]
-              NewTodo = "" },
-        Cmd.none
+        let newState =
+            { state with
+                  TodoList = List.append state.TodoList [ nextTodo ]
+                  NewTodo = "" }
+
+        Persistance.set "state" newState
+
+        newState, Cmd.none
     | StartEditingTodo todoId ->
         let nextTodoList =
             state.TodoList
@@ -136,7 +159,11 @@ let private update msg state =
                     else
                         todo)
 
-        { state with TodoList = nextTodoList }, Cmd.none
+        let newState = { state with TodoList = nextTodoList }
+
+        Persistance.set "state" newState
+
+        newState, Cmd.none
     | SetEditedDescription (todoId, newDescription) ->
         let nextTodoList =
             state.TodoList
@@ -153,7 +180,12 @@ let private update msg state =
                         todo)
 
         { state with TodoList = nextTodoList }, Cmd.none
-    | SetFilter newFilter -> { state with Filter = newFilter }, Cmd.none
+    | SetFilter newFilter ->
+        let newState = { state with Filter = newFilter }
+
+        Persistance.set "state" newState
+
+        newState, Cmd.none
 
 let private appTitle =
     Bulma.title [ prop.innerHtml "Elmish To-Do List" ]

@@ -1,4 +1,4 @@
-module FontAwesome
+module ApplicationStyles
 
 open Zanaptak.TypedCssClasses
 
