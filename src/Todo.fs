@@ -9,6 +9,11 @@ open System
 
 open FontAwesome
 
+type private Filter =
+    | All
+    | Completed
+    | NotCompleted
+
 type private Todo =
     { Id: Guid
       Description: string
@@ -20,7 +25,8 @@ type private TodoBeingEdited = { Id: Guid; Description: string }
 type private State =
     { TodoList: Todo list
       NewTodo: string
-      TodoBeingEdited: TodoBeingEdited option }
+      TodoBeingEdited: TodoBeingEdited option
+      Filter: Filter }
 
 type private Msg =
     | SetNewTodo of string
@@ -31,6 +37,7 @@ type private Msg =
     | ApplyEdit
     | StartEditingTodo of Guid
     | SetEditedDescription of string
+    | SetFilter of Filter
 
 let private init () =
     { TodoList =
@@ -43,7 +50,8 @@ let private init () =
               CompletedOn = None
               CreatedOn = DateTime.UtcNow.AddHours(-3.) } ]
       NewTodo = ""
-      TodoBeingEdited = None },
+      TodoBeingEdited = None
+      Filter = NotCompleted },
     Cmd.none
 
 let private update msg state =
@@ -126,6 +134,7 @@ let private update msg state =
         { state with
               TodoBeingEdited = nextEditModel },
         Cmd.none
+    | SetFilter newFilter -> { state with Filter = newFilter }, Cmd.none
 
 let private appTitle =
     Bulma.title [ prop.innerHtml "Elmish To-Do List" ]
@@ -218,6 +227,12 @@ let private renderTodo todo dispatch =
 let private todoList state dispatch =
     let sortedTodoList =
         state.TodoList
+        |> List.filter
+            (fun todo ->
+                match state.Filter with
+                | All -> true
+                | Completed -> todo.CompletedOn.IsSome
+                | NotCompleted -> todo.CompletedOn.IsNone)
         |> List.sortBy (fun todo -> todo.CompletedOn, todo.CreatedOn)
 
     Html.ul [ prop.children [ for todo in sortedTodoList ->
@@ -226,6 +241,20 @@ let private todoList state dispatch =
                                       renderEditForm todoBeingEdited dispatch
                                   | _ -> renderTodo todo dispatch ] ]
 
+let private renderFilterTabs state dispatch =
+    Bulma.tabs [ tabs.isToggle ++ tabs.isFullWidth
+                 prop.children [ Html.ul [ Bulma.tab [ if state.Filter = All then tab.isActive
+                                                       prop.onClick (fun _ -> dispatch (SetFilter All))
+                                                       prop.children [ Html.a [ prop.text "All" ] ] ]
+                                           Bulma.tab [ if state.Filter = Completed then
+                                                           tab.isActive
+                                                       prop.onClick (fun _ -> dispatch (SetFilter Completed))
+                                                       prop.children [ Html.a [ prop.text "Completed" ] ] ]
+                                           Bulma.tab [ if state.Filter = NotCompleted then
+                                                           tab.isActive
+                                                       prop.onClick (fun _ -> dispatch (SetFilter NotCompleted))
+                                                       prop.children [ Html.a [ prop.text "Not Completed" ] ] ] ] ] ]
+
 [<ReactComponent>]
 let App () =
     let state, dispatch = React.useElmish (init, update, [||])
@@ -233,4 +262,5 @@ let App () =
     Html.div [ prop.style [ style.padding 20 ]
                prop.children [ appTitle
                                inputField state dispatch
+                               renderFilterTabs state dispatch
                                todoList state dispatch ] ]
