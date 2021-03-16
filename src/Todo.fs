@@ -12,27 +12,38 @@ open FontAwesome
 type private Todo =
     { Id: Guid
       Description: string
-      CompletedOn: Option<DateTime> }
+      CompletedOn: DateTime option
+      CreatedOn: DateTime }
+
+type private TodoBeingEdited = { Id: Guid; Description: string }
 
 type private State =
     { TodoList: Todo list
-      NewTodo: string }
+      NewTodo: string
+      TodoBeingEdited: TodoBeingEdited option }
 
 type private Msg =
     | SetNewTodo of string
     | AddNewTodo
     | ToggleCompleted of Guid
     | DeleteTodo of Guid
+    | CancelEdit
+    | ApplyEdit
+    | StartEditingTodo of Guid
+    | SetEditedDescription of string
 
 let private init () =
-    { NewTodo = ""
-      TodoList =
+    { TodoList =
           [ { Id = Guid.NewGuid()
               Description = "Learn F#"
-              CompletedOn = Some(DateTime.UtcNow.AddDays(-1.)) }
+              CompletedOn = Some(DateTime.UtcNow.AddDays(-1.))
+              CreatedOn = DateTime.UtcNow.AddMonths(-1) }
             { Id = Guid.NewGuid()
               Description = "Learn Elmish"
-              CompletedOn = None } ] },
+              CompletedOn = None
+              CreatedOn = DateTime.UtcNow.AddHours(-3.) } ]
+      NewTodo = ""
+      TodoBeingEdited = None },
     Cmd.none
 
 let private update msg state =
@@ -65,11 +76,55 @@ let private update msg state =
         let nextTodo =
             { Id = Guid.NewGuid()
               Description = state.NewTodo
-              CompletedOn = None }
+              CompletedOn = None
+              CreatedOn = DateTime.UtcNow }
 
         { state with
               TodoList = List.append state.TodoList [ nextTodo ]
               NewTodo = "" },
+        Cmd.none
+    | StartEditingTodo todoId ->
+        let nextEditModel =
+            state.TodoList
+            |> List.tryFind (fun todo -> todo.Id = todoId)
+            |> Option.map
+                (fun todo ->
+                    { Id = todo.Id
+                      Description = todo.Description })
+
+        { state with
+              TodoBeingEdited = nextEditModel },
+        Cmd.none
+    | CancelEdit -> { state with TodoBeingEdited = None }, Cmd.none
+    | ApplyEdit ->
+        match state.TodoBeingEdited with
+        | None -> state, Cmd.none
+        | Some todoBeingEdited when todoBeingEdited.Description = "" -> state, Cmd.none
+        | Some todoBeingEdited ->
+            let nextTodoList =
+                state.TodoList
+                |> List.map
+                    (fun todo ->
+                        if todo.Id = todoBeingEdited.Id then
+                            { todo with
+                                  Description = todoBeingEdited.Description }
+                        else
+                            todo)
+
+            { state with
+                  TodoList = nextTodoList
+                  TodoBeingEdited = None },
+            Cmd.none
+    | SetEditedDescription newDescription ->
+        let nextEditModel =
+            state.TodoBeingEdited
+            |> Option.map
+                (fun todoBeingEdited ->
+                    { todoBeingEdited with
+                          Description = newDescription })
+
+        { state with
+              TodoBeingEdited = nextEditModel },
         Cmd.none
 
 let private appTitle =
@@ -93,9 +148,38 @@ let private inputField state dispatch =
                                                                                                 prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                         FA.fa_plus ] ] ] ] ] ] ] ]
 
+let private renderEditForm todoBeingEdited dispatch =
+    Bulma.box [ Bulma.field.div [ field.isGrouped
+                                  prop.children [ Bulma.control.div [ control.isExpanded
+                                                                      prop.children [ Bulma.input.text [ input.isMedium
+                                                                                                         prop.valueOrDefault
+                                                                                                             todoBeingEdited.Description
+                                                                                                         prop.onTextChange (
+                                                                                                             SetEditedDescription
+                                                                                                             >> dispatch
+                                                                                                         ) ] ] ]
+                                                  Bulma.buttons [ Bulma.button.button [ color.isPrimary
+                                                                                        prop.onClick
+                                                                                            (fun _ ->
+                                                                                                dispatch ApplyEdit)
+                                                                                        prop.children [ Html.i [ prop.classes [ FA.fas
+                                                                                                                                FA.fa_save ] ] ] ]
+                                                                  Bulma.button.button [ color.isWarning
+                                                                                        prop.onClick
+                                                                                            (fun _ ->
+                                                                                                dispatch CancelEdit)
+                                                                                        prop.children [ Html.i [ prop.classes [ FA.fas
+                                                                                                                                FA.fa_arrow_right ] ] ] ] ] ]
+
+                                   ]
+
+                 ]
+
 let private renderTodo todo dispatch =
     Bulma.box [ Bulma.columns [ columns.isMobile ++ columns.isVCentered
-                                prop.children [ Bulma.column [ Bulma.text.p [ prop.className "subtitle"
+                                prop.children [ Bulma.column [ Bulma.text.p [ if todo.CompletedOn.IsSome then
+                                                                                  color.hasTextGreyLight
+                                                                              prop.className "subtitle"
                                                                               prop.text todo.Description ] ]
                                                 Bulma.column [ column.isNarrow
                                                                prop.children [ Bulma.buttons [ Bulma.button.button [ if todo.CompletedOn.IsSome then
@@ -108,6 +192,15 @@ let private renderTodo todo dispatch =
                                                                                                                              ))
                                                                                                                      prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                                              FA.fa_check ] ] ] ]
+                                                                                               Bulma.button.button [ color.isPrimary
+                                                                                                                     prop.onClick
+                                                                                                                         (fun _ ->
+                                                                                                                             dispatch (
+                                                                                                                                 StartEditingTodo
+                                                                                                                                     todo.Id
+                                                                                                                             ))
+                                                                                                                     prop.children [ Html.i [ prop.classes [ FA.fas
+                                                                                                                                                             FA.fa_edit ] ] ] ]
                                                                                                Bulma.button.button [ color.isDanger
                                                                                                                      prop.onClick
                                                                                                                          (fun _ ->
@@ -119,7 +212,15 @@ let private renderTodo todo dispatch =
                                                                                                                                                              FA.fa_trash ] ] ] ] ] ] ] ] ] ]
 
 let private todoList state dispatch =
-    Html.ul [ prop.children [ for todo in state.TodoList -> renderTodo todo dispatch ] ]
+    let sortedTodoList =
+        state.TodoList
+        |> List.sortBy (fun todo -> todo.CompletedOn, todo.CreatedOn)
+
+    Html.ul [ prop.children [ for todo in sortedTodoList ->
+                                  match state.TodoBeingEdited with
+                                  | Some todoBeingEdited when todoBeingEdited.Id = todo.Id ->
+                                      renderEditForm todoBeingEdited dispatch
+                                  | _ -> renderTodo todo dispatch ] ]
 
 [<ReactComponent>]
 let App () =
