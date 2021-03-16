@@ -1,17 +1,29 @@
-# Feliz Template
+# Elmish To-Do List
 
-This template gets you up and running with a simple web app using [Fable](http://fable.io/), [Elmish](https://fable-elmish.github.io/) and [Feliz](https://github.com/Zaid-Ajaj/Feliz).
+> A minimal todo list using Fable and Elmish
+
+Reading through [the Elmish book](https://zaid-ajaj.github.io/the-elmish-book/#/) and this is one of the exercises.
+
+## Features
+
+- [x] Add tasks
+- [x] Delete tasks
+- [x] Edit tasks
+- [x] Complete tasks
+- [x] Filter tasks
+- [x] Persist tasks in [`Window.localStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
+- [ ] Persist tasks in [Firebase](https://firebase.google.com/)
+  - [ ] Add authentication
+  - [ ] Add persistance
 
 ## Requirements
 
 * [dotnet SDK](https://www.microsoft.com/net/download/core) 2.0.0 or higher
 * [node.js](https://nodejs.org) 10.0.0 or higher
 
-
 ## Editor
 
 To write and edit your code, you can use either VS Code + [Ionide](http://ionide.io/), Emacs with [fsharp-mode](https://github.com/fsharp/emacs-fsharp-mode), [Rider](https://www.jetbrains.com/rider/) or Visual Studio.
-
 
 ## Development
 
@@ -41,3 +53,14 @@ To run the tests using the command line and of course in your CI server, you hav
 ```
 npm test
 ```
+
+## Deployment
+
+This application is hosted using GitHub Pages. To deploy, run
+```
+npm run deploy
+```
+
+## Thanks
+
+This project was generated using the [Feliz Template](https://github.com/Zaid-Ajaj/Feliz).
