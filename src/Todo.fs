@@ -157,7 +157,7 @@ let private inputField state dispatch =
                                                                                                 prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                         FA.fa_plus ] ] ] ] ] ] ] ]
 
-let private renderEditForm todoBeingEdited dispatch =
+let private renderEditForm uneditedTodoDescription todoBeingEdited dispatch =
     Bulma.box [ Bulma.field.div [ field.isGrouped
                                   prop.children [ Bulma.control.div [ control.isExpanded
                                                                       prop.children [ Bulma.input.text [ input.isMedium
@@ -168,9 +168,12 @@ let private renderEditForm todoBeingEdited dispatch =
                                                                                                              >> dispatch
                                                                                                          ) ] ] ]
                                                   Bulma.buttons [ Bulma.button.button [ color.isPrimary
-                                                                                        prop.onClick
-                                                                                            (fun _ ->
-                                                                                                dispatch ApplyEdit)
+                                                                                        if todoBeingEdited.Description = uneditedTodoDescription then
+                                                                                            prop.disabled true
+                                                                                        if todoBeingEdited.Description = uneditedTodoDescription then
+                                                                                            prop.onClick
+                                                                                                (fun _ ->
+                                                                                                    dispatch ApplyEdit)
                                                                                         prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                 FA.fa_save ] ] ] ]
                                                                   Bulma.button.button [ color.isWarning
@@ -205,7 +208,7 @@ let private renderTodo todo dispatch =
                                                                                                                      if todo.CompletedOn.IsSome then
                                                                                                                          prop.disabled
                                                                                                                              true
-                                                                                                                     if todo.CompletedOn.IsSome then
+                                                                                                                     if todo.CompletedOn.IsNone then
                                                                                                                          prop.onClick
                                                                                                                              (fun _ ->
                                                                                                                                  dispatch (
@@ -238,7 +241,7 @@ let private todoList state dispatch =
     Html.ul [ prop.children [ for todo in sortedTodoList ->
                                   match state.TodoBeingEdited with
                                   | Some todoBeingEdited when todoBeingEdited.Id = todo.Id ->
-                                      renderEditForm todoBeingEdited dispatch
+                                      renderEditForm todo.Description todoBeingEdited dispatch
                                   | _ -> renderTodo todo dispatch ] ]
 
 let private renderFilterTabs state dispatch =
