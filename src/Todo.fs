@@ -189,8 +189,7 @@ let private update msg state =
 
 let private appTitle =
     Bulma.navbar [ prop.className Bulma.IsSpaced
-                   prop.children [ Bulma.container [ Bulma.navbarBrand.div [ Bulma.navbarItem.a [ Bulma.title.h1
-                                                                                                      "Elmish To-Do List" ] ]
+                   prop.children [ Bulma.container [ Bulma.navbarBrand.div [ Bulma.navbarItem.a [ Bulma.title.h1 "To-Do" ] ]
                                                      Bulma.navbarEnd.div [ Bulma.navbarItem.a [ prop.href
                                                                                                     "https://github.com/the-pat/elmish-todo"
                                                                                                 prop.target "_blank"
