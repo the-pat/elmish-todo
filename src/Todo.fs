@@ -63,7 +63,7 @@ let private init () =
                   CreatedOn = DateTime.UtcNow.AddHours(-3.)
                   TodoBeingEdited = None } ]
           NewTodo = ""
-          Filter = NotCompleted },
+          Filter = All },
         Cmd.none
 
 let private update msg state =
