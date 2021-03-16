@@ -205,3 +205,4 @@ out
 *.fs.js
 
 dist-tests/
+dist/

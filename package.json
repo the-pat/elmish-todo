@@ -8,7 +8,8 @@
     "test:live": "dotnet fable watch tests --run webpack serve --mode=development --config ./webpack.tests.js",
     "build:test": "dotnet fable tests && webpack --config webpack.tests.js",
     "pretest": "dotnet tool restore",
-    "test": "dotnet fable tests --outDir dist-tests/tests && mocha dist-tests/tests -r esm"
+    "test": "dotnet fable tests --outDir dist-tests/tests && mocha dist-tests/tests -r esm",
+    "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
     "bulma": "^0.9.1",
@@ -30,6 +31,7 @@
     "dotenv-webpack": "^6.0.0",
     "esm": "^3.2.25",
     "file-loader": "^6.2.0",
+    "gh-pages": "^3.1.0",
     "graceful-fs": "^4.2.4",
     "html-webpack-plugin": "^4.5.1",
     "mini-css-extract-plugin": "^1.3.4",
