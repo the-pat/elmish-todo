@@ -193,12 +193,16 @@ let private renderTodo todo dispatch =
                                                                                                                      prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                                              FA.fa_check ] ] ] ]
                                                                                                Bulma.button.button [ color.isPrimary
-                                                                                                                     prop.onClick
-                                                                                                                         (fun _ ->
-                                                                                                                             dispatch (
-                                                                                                                                 StartEditingTodo
-                                                                                                                                     todo.Id
-                                                                                                                             ))
+                                                                                                                     if todo.CompletedOn.IsSome then
+                                                                                                                         prop.disabled
+                                                                                                                             true
+                                                                                                                     if todo.CompletedOn.IsSome then
+                                                                                                                         prop.onClick
+                                                                                                                             (fun _ ->
+                                                                                                                                 dispatch (
+                                                                                                                                     StartEditingTodo
+                                                                                                                                         todo.Id
+                                                                                                                                 ))
                                                                                                                      prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                                              FA.fa_edit ] ] ] ]
                                                                                                Bulma.button.button [ color.isDanger
