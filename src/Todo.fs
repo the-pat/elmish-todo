@@ -14,18 +14,18 @@ type private Filter =
     | Completed
     | NotCompleted
 
+type private TodoBeingEdited = { Id: Guid; Description: string }
+
 type private Todo =
     { Id: Guid
       Description: string
       CompletedOn: DateTime option
-      CreatedOn: DateTime }
-
-type private TodoBeingEdited = { Id: Guid; Description: string }
+      CreatedOn: DateTime
+      TodoBeingEdited: TodoBeingEdited option }
 
 type private State =
     { TodoList: Todo list
       NewTodo: string
-      TodoBeingEdited: TodoBeingEdited option
       Filter: Filter }
 
 type private Msg =
@@ -33,10 +33,10 @@ type private Msg =
     | AddNewTodo
     | ToggleCompleted of Guid
     | DeleteTodo of Guid
-    | CancelEdit
-    | ApplyEdit
+    | CancelEdit of Guid
+    | ApplyEdit of Guid
     | StartEditingTodo of Guid
-    | SetEditedDescription of string
+    | SetEditedDescription of Guid * string
     | SetFilter of Filter
 
 let private init () =
@@ -44,13 +44,14 @@ let private init () =
           [ { Id = Guid.NewGuid()
               Description = "Learn F#"
               CompletedOn = Some(DateTime.UtcNow.AddDays(-1.))
-              CreatedOn = DateTime.UtcNow.AddMonths(-1) }
+              CreatedOn = DateTime.UtcNow.AddMonths(-1)
+              TodoBeingEdited = None }
             { Id = Guid.NewGuid()
               Description = "Learn Elmish"
               CompletedOn = None
-              CreatedOn = DateTime.UtcNow.AddHours(-3.) } ]
+              CreatedOn = DateTime.UtcNow.AddHours(-3.)
+              TodoBeingEdited = None } ]
       NewTodo = ""
-      TodoBeingEdited = None
       Filter = NotCompleted },
     Cmd.none
 
@@ -85,55 +86,73 @@ let private update msg state =
             { Id = Guid.NewGuid()
               Description = state.NewTodo
               CompletedOn = None
-              CreatedOn = DateTime.UtcNow }
+              CreatedOn = DateTime.UtcNow
+              TodoBeingEdited = None }
 
         { state with
               TodoList = List.append state.TodoList [ nextTodo ]
               NewTodo = "" },
         Cmd.none
     | StartEditingTodo todoId ->
-        let nextEditModel =
+        let nextTodoList =
             state.TodoList
-            |> List.tryFind (fun todo -> todo.Id = todoId)
-            |> Option.map
+            |> List.map
                 (fun todo ->
-                    { Id = todo.Id
-                      Description = todo.Description })
+                    if todo.Id = todoId then
+                        { todo with
+                              TodoBeingEdited =
+                                  Some(
+                                      { Id = todo.Id
+                                        Description = todo.Description }
+                                  ) }
+                    else
+                        todo)
 
-        { state with
-              TodoBeingEdited = nextEditModel },
-        Cmd.none
-    | CancelEdit -> { state with TodoBeingEdited = None }, Cmd.none
-    | ApplyEdit ->
-        match state.TodoBeingEdited with
-        | None -> state, Cmd.none
-        | Some todoBeingEdited when todoBeingEdited.Description = "" -> state, Cmd.none
-        | Some todoBeingEdited ->
-            let nextTodoList =
-                state.TodoList
-                |> List.map
-                    (fun todo ->
-                        if todo.Id = todoBeingEdited.Id then
+        { state with TodoList = nextTodoList }, Cmd.none
+    | CancelEdit todoId ->
+        let nextTodoList =
+            state.TodoList
+            |> List.map
+                (fun todo ->
+                    if todo.Id = todoId then
+                        { todo with TodoBeingEdited = None }
+                    else
+                        todo)
+
+        { state with TodoList = nextTodoList }, Cmd.none
+    | ApplyEdit todoId ->
+        let nextTodoList =
+            state.TodoList
+            |> List.map
+                (fun todo ->
+                    if todo.Id = todoId then
+                        match todo.TodoBeingEdited with
+                        | None -> todo
+                        | Some todoBeingEdited when todoBeingEdited.Description = "" -> todo
+                        | Some todoBeingEdited ->
                             { todo with
-                                  Description = todoBeingEdited.Description }
-                        else
-                            todo)
+                                  Description = todoBeingEdited.Description
+                                  TodoBeingEdited = None }
+                    else
+                        todo)
 
-            { state with
-                  TodoList = nextTodoList
-                  TodoBeingEdited = None },
-            Cmd.none
-    | SetEditedDescription newDescription ->
-        let nextEditModel =
-            state.TodoBeingEdited
-            |> Option.map
-                (fun todoBeingEdited ->
-                    { todoBeingEdited with
-                          Description = newDescription })
+        { state with TodoList = nextTodoList }, Cmd.none
+    | SetEditedDescription (todoId, newDescription) ->
+        let nextTodoList =
+            state.TodoList
+            |> List.map
+                (fun todo ->
+                    if todo.Id = todoId then
+                        { todo with
+                              TodoBeingEdited =
+                                  Some(
+                                      { Id = todo.Id
+                                        Description = newDescription }
+                                  ) }
+                    else
+                        todo)
 
-        { state with
-              TodoBeingEdited = nextEditModel },
-        Cmd.none
+        { state with TodoList = nextTodoList }, Cmd.none
     | SetFilter newFilter -> { state with Filter = newFilter }, Cmd.none
 
 let private appTitle =
@@ -157,29 +176,40 @@ let private inputField state dispatch =
                                                                                                 prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                         FA.fa_plus ] ] ] ] ] ] ] ]
 
-let private renderEditForm uneditedTodoDescription todoBeingEdited dispatch =
+let private renderEditForm uneditedTodoDescription (todoBeingEdited: TodoBeingEdited) (dispatch: Msg -> unit) =
     Bulma.box [ Bulma.field.div [ field.isGrouped
                                   prop.children [ Bulma.control.div [ control.isExpanded
                                                                       prop.children [ Bulma.input.text [ input.isMedium
                                                                                                          prop.valueOrDefault
                                                                                                              todoBeingEdited.Description
-                                                                                                         prop.onTextChange (
-                                                                                                             SetEditedDescription
-                                                                                                             >> dispatch
-                                                                                                         ) ] ] ]
+                                                                                                         prop.onTextChange
+                                                                                                             (fun newDescription ->
+                                                                                                                 dispatch (
+                                                                                                                     SetEditedDescription(
+                                                                                                                         todoBeingEdited.Id,
+                                                                                                                         newDescription
+                                                                                                                     )
+                                                                                                                 )) ] ] ]
                                                   Bulma.buttons [ Bulma.button.button [ color.isPrimary
                                                                                         if todoBeingEdited.Description = uneditedTodoDescription then
                                                                                             prop.disabled true
-                                                                                        if todoBeingEdited.Description = uneditedTodoDescription then
+                                                                                        if todoBeingEdited.Description
+                                                                                           <> uneditedTodoDescription then
                                                                                             prop.onClick
                                                                                                 (fun _ ->
-                                                                                                    dispatch ApplyEdit)
+                                                                                                    dispatch (
+                                                                                                        ApplyEdit
+                                                                                                            todoBeingEdited.Id
+                                                                                                    ))
                                                                                         prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                 FA.fa_save ] ] ] ]
                                                                   Bulma.button.button [ color.isWarning
                                                                                         prop.onClick
                                                                                             (fun _ ->
-                                                                                                dispatch CancelEdit)
+                                                                                                dispatch (
+                                                                                                    CancelEdit
+                                                                                                        todoBeingEdited.Id
+                                                                                                ))
                                                                                         prop.children [ Html.i [ prop.classes [ FA.fas
                                                                                                                                 FA.fa_arrow_right ] ] ] ] ] ]
 
@@ -239,7 +269,7 @@ let private todoList state dispatch =
         |> List.sortBy (fun todo -> todo.CompletedOn, todo.CreatedOn)
 
     Html.ul [ prop.children [ for todo in sortedTodoList ->
-                                  match state.TodoBeingEdited with
+                                  match todo.TodoBeingEdited with
                                   | Some todoBeingEdited when todoBeingEdited.Id = todo.Id ->
                                       renderEditForm todo.Description todoBeingEdited dispatch
                                   | _ -> renderTodo todo dispatch ] ]
